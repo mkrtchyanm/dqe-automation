@@ -1,1 +1,8 @@
-
+id,name,age,email,is_active
+1,Michael Jordan,60,michael.jordan@example.com,False
+2,LeBron James,40,lebron.james@example.com,False
+3,Kobe Bryant,41,kobe.bryant@example.com,False
+4,Shaquille O'Neal,53,shaquille.oneal@example.com,False
+4,Shaquille O'Neal,53,shaquille.oneal@example.com,False
+5,Stephen Curry,37,invalid_email.com,True
+6,Nikola Jokic,30,nikola.jokic@example.com,True
