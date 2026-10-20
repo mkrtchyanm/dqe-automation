@@ -49,6 +49,7 @@ pipeline {
                         echo "DB_NAME=${DB_NAME}"
                         echo "DB_USER=${DB_USER}"
                         ls -la /parquet_data || true
+
                         python -m pytest tests -m parquet_data \
                             --db_host="${DB_HOST}" \
                             --db_port="${DB_PORT}" \
@@ -56,12 +57,13 @@ pipeline {
                             --db_user="${DB_USER}" \
                             --db_password="${DB_PASSWORD}" \
                             -vv -s --maxfail=1 \
-                            --html=html_report/report.html 2>&1 | tee pytest-output.log
-                        status=${PIPESTATUS[0]}
+                            --html=html_report/report.html > pytest-output.log 2>&1
+                        status=$?
                         echo "PYTEST_EXIT_CODE=${status}"
-                        if [ "${status}" -ne 0 ]; then
-                            echo "Pytest failed with exit code ${status}"
-                            exit "${status}"
+                        cat pytest-output.log
+                        if [ "$status" -ne 0 ]; then
+                            echo "Pytest failed with exit code $status"
+                            exit "$status"
                         fi
                     '''
                 }
