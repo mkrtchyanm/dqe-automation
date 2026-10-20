@@ -5,6 +5,8 @@ pipeline {
         DB_HOST = 'postgres'
         DB_PORT = '5432'
         DB_NAME = 'mydatabase'
+        DB_USER = 'myuser'
+        DB_PASSWORD = 'mypassword'
     }
 
     stages {
@@ -36,33 +38,32 @@ pipeline {
 
         stage('Run DQ checks') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'POSTGRES_SECRET', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
-                    dir('PyTest DQ Framework') {
-                        sh '''
-                            set +e
-                            set -x
-                            . .venv/bin/activate
-                            mkdir -p html_report
-                            echo "DB_HOST=$DB_HOST"
-                            echo "DB_PORT=$DB_PORT"
-                            echo "DB_NAME=$DB_NAME"
-                            ls -la /parquet_data || true
-                            python -m pytest tests -m parquet_data \
-                                --db_host="$DB_HOST" \
-                                --db_port="$DB_PORT" \
-                                --db_name="$DB_NAME" \
-                                --db_user="$DB_USER" \
-                                --db_password="$DB_PASSWORD" \
-                                -vv -s --maxfail=1 \
-                                --html=html_report/report.html 2>&1 | tee pytest-output.log
-                            status=${PIPESTATUS[0]}
-                            echo "PYTEST_EXIT_CODE=$status"
-                            if [ "$status" -ne 0 ]; then
-                                echo "Pytest failed with exit code $status"
-                                exit "$status"
-                            fi
-                        '''
-                    }
+                dir('PyTest DQ Framework') {
+                    sh '''
+                        set +e
+                        set -x
+                        . .venv/bin/activate
+                        mkdir -p html_report
+                        echo "DB_HOST=${DB_HOST}"
+                        echo "DB_PORT=${DB_PORT}"
+                        echo "DB_NAME=${DB_NAME}"
+                        echo "DB_USER=${DB_USER}"
+                        ls -la /parquet_data || true
+                        python -m pytest tests -m parquet_data \
+                            --db_host="${DB_HOST}" \
+                            --db_port="${DB_PORT}" \
+                            --db_name="${DB_NAME}" \
+                            --db_user="${DB_USER}" \
+                            --db_password="${DB_PASSWORD}" \
+                            -vv -s --maxfail=1 \
+                            --html=html_report/report.html 2>&1 | tee pytest-output.log
+                        status=${PIPESTATUS[0]}
+                        echo "PYTEST_EXIT_CODE=${status}"
+                        if [ "${status}" -ne 0 ]; then
+                            echo "Pytest failed with exit code ${status}"
+                            exit "${status}"
+                        fi
+                    '''
                 }
             }
         }
