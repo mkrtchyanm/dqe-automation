@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+
+    environment {
+        DB_HOST = 'postgres'
+        DB_PORT = '5432'
+        DB_NAME = 'mydatabase'
+    }
+
+    stages {
+        stage('Install dependencies') {
+            steps {
+                dir('PyTest DQ Framework') {
+                    sh 'python3 -m venv .venv'
+                    sh '. .venv/bin/activate && python -m pip install --upgrade pip && python -m pip install -r requirements.txt'
+                }
+            }
+        }
+
+        stage('Run DQ checks') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'POSTGRES_SECRET', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
+                    dir('PyTest DQ Framework') {
+                        sh '''
+                            . .venv/bin/activate
+                            python -m pytest tests -m parquet_data --db_host="$DB_HOST" --db_port="$DB_PORT" --db_name="$DB_NAME" --db_user="$DB_USER" --db_password="$DB_PASSWORD" --html=html_report/report.html
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Publish report') {
+            steps {
+                dir('PyTest DQ Framework') {
+                    archiveArtifacts artifacts: 'html_report/**', fingerprint: true
+                }
+            }
+        }
+    }
+}
