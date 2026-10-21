@@ -70,18 +70,19 @@ pipeline {
             }
         }
 
-        stage('Publish report') {
-            steps {
-                dir('PyTest DQ Framework') {
-                    sh 'ls -la html_report || true; ls -la pytest-output.log || true'
-                    archiveArtifacts artifacts: 'html_report/**, pytest-output.log', fingerprint: true
-                }
-            }
-        }
     }
 
     post {
         always {
+            dir('PyTest DQ Framework') {
+                sh '''
+                    set +e
+                    echo 'Checking generated artifacts...'
+                    ls -la html_report || true
+                    ls -la pytest-output.log || true
+                '''
+                archiveArtifacts artifacts: 'html_report/**, pytest-output.log', fingerprint: true
+            }
             echo 'DQ pipeline execution completed.'
         }
         failure {
