@@ -56,7 +56,7 @@ pipeline {
                             --db_name="${DB_NAME}" \
                             --db_user="${DB_USER}" \
                             --db_password="${DB_PASSWORD}" \
-                            -vv -s --maxfail=1 \
+                            -vv -s \
                             --html=html_report/report.html > pytest-output.log 2>&1
                         status=$?
                         echo "PYTEST_EXIT_CODE=${status}"
@@ -81,7 +81,7 @@ pipeline {
                     ls -la html_report || true
                     ls -la pytest-output.log || true
                 '''
-                archiveArtifacts artifacts: 'html_report/**, pytest-output.log', fingerprint: true
+                archiveArtifacts artifacts: 'html_report/**, pytest-output.log', fingerprint: true, allowEmptyArchive: true
             }
             echo 'DQ pipeline execution completed.'
         }
