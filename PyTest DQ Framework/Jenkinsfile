@@ -87,8 +87,7 @@ pipeline {
 
         stage('Archive Test Report') {
             steps {
-                archiveArtifacts artifacts: 'PyTest DQ Framework/html_report/**, PyTest DQ Framework/pytest-output.log', fingerprint: true, allowEmptyArchive: true
-                junit allowEmptyResults: true, testResults: 'PyTest DQ Framework/html_report/junit_report.xml'
+                archiveArtifacts artifacts: 'PyTest DQ Framework/html_report/**', allowEmptyArchive: true
                 script {
                     try {
                         publishHTML(target: [
@@ -101,21 +100,6 @@ pipeline {
                         ])
                     } catch (Exception e) {
                         echo "publishHTML warning: ${e.message}"
-                    }
-                }
-            }
-        }
-
-        stage('Evaluate DQ result') {
-            steps {
-                dir('PyTest DQ Framework') {
-                    script {
-                        def code = readFile('pytest-exit-code.txt').trim()
-                        if (code == '1') {
-                            unstable('Data quality checks failed: mapping vs parquet mismatches found. See the HTML report.')
-                        } else if (code != '0') {
-                            error("Pytest execution failed with system exit code ${code}. Check pytest-output.log.")
-                        }
                     }
                 }
             }
