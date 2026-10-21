@@ -75,24 +75,23 @@ pipeline {
 
     post {
         always {
-            dir('PyTest DQ Framework') {
-                sh '''
-                    set +e
-                    echo 'Checking generated artifacts...'
-                    ls -la html_report || true
-                    ls -la pytest-output.log || true
-                '''
-                junit allowEmptyResults: true, testResults: 'html_report/junit_report.xml'
-                publishHTML(target: [
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'html_report',
-                    reportFiles: 'report.html',
-                    reportName: 'Pytest DQ Report'
-                ])
-                archiveArtifacts artifacts: 'html_report/**, pytest-output.log', fingerprint: true, allowEmptyArchive: true
-            }
+            sh '''
+                set +e
+                echo 'Checking generated artifacts...'
+                ls -la "${WORKSPACE}/PyTest DQ Framework" || true
+                ls -la "${WORKSPACE}/PyTest DQ Framework/html_report" || true
+                ls -la "${WORKSPACE}/PyTest DQ Framework/pytest-output.log" || true
+            '''
+            junit allowEmptyResults: true, testResults: 'PyTest DQ Framework/html_report/junit_report.xml'
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'PyTest DQ Framework/html_report',
+                reportFiles: 'report.html',
+                reportName: 'Pytest DQ Report'
+            ])
+            archiveArtifacts artifacts: 'PyTest DQ Framework/html_report/**, PyTest DQ Framework/pytest-output.log', fingerprint: true, allowEmptyArchive: true
             echo 'DQ pipeline execution completed.'
         }
         failure {
