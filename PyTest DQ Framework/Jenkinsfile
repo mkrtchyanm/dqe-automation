@@ -85,23 +85,7 @@ pipeline {
             }
         }
 
-        stage('Generate report') {
-            steps {
-                dir('PyTest DQ Framework') {
-                    sh '''
-                        set -eu
-                        . .venv/bin/activate
-                        python scripts/generate_report.py \
-                            --junit html_report/junit_report.xml \
-                            --output html_report/dq_summary.html \
-                            --title "Data Quality Report (build ${BUILD_NUMBER})"
-                        ls -la html_report
-                    '''
-                }
-            }
-        }
-
-        stage('Publish report') {
+        stage('Archive Test Report') {
             steps {
                 archiveArtifacts artifacts: 'PyTest DQ Framework/html_report/**, PyTest DQ Framework/pytest-output.log', fingerprint: true, allowEmptyArchive: true
                 junit allowEmptyResults: true, testResults: 'PyTest DQ Framework/html_report/junit_report.xml'
@@ -112,7 +96,7 @@ pipeline {
                             alwaysLinkToLastBuild: true,
                             keepAll: true,
                             reportDir: 'PyTest DQ Framework/html_report',
-                            reportFiles: 'report.html,dq_summary.html',
+                            reportFiles: 'report.html',
                             reportName: 'HTML Test Report'
                         ])
                     } catch (Exception e) {
