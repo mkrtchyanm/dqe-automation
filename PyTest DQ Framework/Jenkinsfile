@@ -2,22 +2,21 @@ pipeline {
     agent any
 
     environment {
+        // Jenkins Credentials Store: "Username with password" credential, ID jenkins-postgres-credentials.
+        // Exposes POSTGRES_SECRET_USR and POSTGRES_SECRET_PSW. No passwords in the repo.
+        POSTGRES_SECRET = credentials('jenkins-postgres-credentials')
         DB_HOST = 'postgres'
         DB_PORT = '5432'
         DB_NAME = 'mydatabase'
-        DB_USER = 'myuser'
-        DB_PASSWORD = 'mypassword'
     }
 
     stages {
-        stage('Debug workspace and parquet output') {
+        stage('Check parquet output') {
             steps {
                 sh '''
-                    set -eux
+                    set -eu
                     pwd
-                    ls -la
-                    ls -la /parquet_data || true
-                    find /parquet_data -maxdepth 2 -type f 2>/dev/null | head -50 || true
+                    ls -la /parquet_data
                 '''
             }
         }
@@ -39,34 +38,75 @@ pipeline {
         stage('Run DQ checks') {
             steps {
                 dir('PyTest DQ Framework') {
+                    // Test failures must not stop the pipeline: the report is still generated and archived.
                     sh '''
                         set +e
-                        set -x
                         . .venv/bin/activate
                         mkdir -p html_report
-                        echo "DB_HOST=${DB_HOST}"
-                        echo "DB_PORT=${DB_PORT}"
-                        echo "DB_NAME=${DB_NAME}"
-                        echo "DB_USER=${DB_USER}"
-                        ls -la /parquet_data || true
 
                         python -m pytest tests -m parquet_data \
                             --db_host="${DB_HOST}" \
                             --db_port="${DB_PORT}" \
                             --db_name="${DB_NAME}" \
-                            --db_user="${DB_USER}" \
-                            --db_password="${DB_PASSWORD}" \
-                            -vv -s \
+                            --db_user="${POSTGRES_SECRET_USR}" \
+                            --db_password="${POSTGRES_SECRET_PSW}" \
+                            -vv \
                             --html=html_report/report.html \
                             --junitxml=html_report/junit_report.xml > pytest-output.log 2>&1
                         status=$?
-                        echo "PYTEST_EXIT_CODE=${status}"
+                        echo "$status" > pytest-exit-code.txt
                         cat pytest-output.log
-                        if [ "$status" -ne 0 ]; then
-                            echo "Pytest failed with exit code $status"
-                            exit "$status"
-                        fi
+                        echo "PYTEST_EXIT_CODE=${status}"
+                        exit 0
                     '''
+                }
+            }
+        }
+
+        stage('Generate report') {
+            steps {
+                dir('PyTest DQ Framework') {
+                    sh '''
+                        set -eu
+                        . .venv/bin/activate
+                        python scripts/generate_report.py \
+                            --junit html_report/junit_report.xml \
+                            --output html_report/dq_summary.html \
+                            --title "Data Quality Report (build ${BUILD_NUMBER})"
+                        ls -la html_report
+                    '''
+                }
+            }
+        }
+
+        stage('Publish report') {
+            steps {
+                // Archive first so artifacts are kept even if a later publisher step fails.
+                archiveArtifacts artifacts: 'PyTest DQ Framework/html_report/**, PyTest DQ Framework/pytest-output.log', fingerprint: true, allowEmptyArchive: false
+                junit allowEmptyResults: false, testResults: 'PyTest DQ Framework/html_report/junit_report.xml'
+                publishHTML(target: [
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'PyTest DQ Framework/html_report',
+                    reportFiles: 'report.html,dq_summary.html',
+                    reportName: 'HTML Test Report'
+                ])
+            }
+        }
+
+        stage('Evaluate DQ result') {
+            steps {
+                dir('PyTest DQ Framework') {
+                    script {
+                        // pytest exit codes: 0 = all passed, 1 = some checks failed (data defects), others = run/config error.
+                        def code = readFile('pytest-exit-code.txt').trim()
+                        if (code == '1') {
+                            unstable('Data quality checks failed: mapping vs parquet mismatches. See the HTML report.')
+                        } else if (code != '0') {
+                            error("Pytest did not run correctly (exit code ${code}). See pytest-output.log.")
+                        }
+                    }
                 }
             }
         }
@@ -75,27 +115,12 @@ pipeline {
 
     post {
         always {
-            sh '''
-                set +e
-                echo 'Checking generated artifacts...'
-                ls -la "${WORKSPACE}/PyTest DQ Framework" || true
-                ls -la "${WORKSPACE}/PyTest DQ Framework/html_report" || true
-                ls -la "${WORKSPACE}/PyTest DQ Framework/pytest-output.log" || true
-            '''
-            junit allowEmptyResults: true, testResults: 'PyTest DQ Framework/html_report/junit_report.xml'
-            publishHTML(target: [
-                allowMissing: true,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: 'PyTest DQ Framework/html_report',
-                reportFiles: 'report.html',
-                reportName: 'Pytest DQ Report'
-            ])
+            // Safety net: if an earlier stage aborted before publishing, still keep whatever exists.
             archiveArtifacts artifacts: 'PyTest DQ Framework/html_report/**, PyTest DQ Framework/pytest-output.log', fingerprint: true, allowEmptyArchive: true
             echo 'DQ pipeline execution completed.'
         }
         failure {
-            echo 'DQ pipeline failed. Check the workspace and /parquet_data debug output above.'
+            echo 'DQ pipeline failed. Check the DQ report artifacts and /parquet_data debug output above.'
         }
     }
 }
