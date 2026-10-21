@@ -57,7 +57,8 @@ pipeline {
                             --db_user="${DB_USER}" \
                             --db_password="${DB_PASSWORD}" \
                             -vv -s \
-                            --html=html_report/report.html > pytest-output.log 2>&1
+                            --html=html_report/report.html \
+                            --junitxml=html_report/junit_report.xml > pytest-output.log 2>&1
                         status=$?
                         echo "PYTEST_EXIT_CODE=${status}"
                         cat pytest-output.log
@@ -81,6 +82,15 @@ pipeline {
                     ls -la html_report || true
                     ls -la pytest-output.log || true
                 '''
+                junit allowEmptyResults: true, testResults: 'html_report/junit_report.xml'
+                publishHTML(target: [
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'html_report',
+                    reportFiles: 'report.html',
+                    reportName: 'Pytest DQ Report'
+                ])
                 archiveArtifacts artifacts: 'html_report/**, pytest-output.log', fingerprint: true, allowEmptyArchive: true
             }
             echo 'DQ pipeline execution completed.'
