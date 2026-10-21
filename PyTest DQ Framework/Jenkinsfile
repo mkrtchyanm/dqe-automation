@@ -88,20 +88,6 @@ pipeline {
         stage('Archive Test Report') {
             steps {
                 archiveArtifacts artifacts: 'PyTest DQ Framework/html_report/**, PyTest DQ Framework/pytest-output.log', allowEmptyArchive: false
-                script {
-                    try {
-                        publishHTML(target: [
-                            allowMissing: false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll: true,
-                            reportDir: 'PyTest DQ Framework/html_report',
-                            reportFiles: 'report.html',
-                            reportName: 'HTML Test Report'
-                        ])
-                    } catch (Exception e) {
-                        echo "publishHTML warning: ${e.message}"
-                    }
-                }
             }
         }
 
