@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.5 (Python 3.13.0 on win32)" generated="2026-10-29T17:10:36.416526" rpa="false" schemaversion="5">
+<suite id="s1" name="Test" source="C:\Users\MananMkrtchyan\Downloads\dqe-automation-main\dqe-automation\Robot Framework\test.robot">
+<test id="s1-t1" name="Verify HTML Report Table Matches Parquet Dataset" line="13">
+<kw name="Open Report In Chrome">
+<kw name="Open Browser" owner="SeleniumLibrary">
+<msg time="2026-10-29T17:10:37.179578" level="INFO">Opening browser 'headlesschrome' to base url 'file:///C:\Users\MananMkrtchyan\Downloads\dqe-automation-main\dqe-automation\Robot Framework/report.html'.</msg>
+<arg>file:///${file_path}</arg>
+<arg>headlesschrome</arg>
+<doc>Opens a new browser instance to the optional ``url``.</doc>
+<status status="PASS" start="2026-10-29T17:10:37.179217" elapsed="2.786831"/>
+</kw>
+<kw name="Set Window Size" owner="SeleniumLibrary">
+<arg>1920</arg>
+<arg>1080</arg>
+<doc>Sets current windows size to given ``width`` and ``height``.</doc>
+<status status="PASS" start="2026-10-29T17:10:39.966536" elapsed="0.028736"/>
+</kw>
+<kw name="Wait Until Page Contains Element" owner="SeleniumLibrary">
+<arg>xpath=//*[@class='table']</arg>
+<arg>timeout=10s</arg>
+<doc>Waits until the element ``locator`` appears on the current page.</doc>
+<status status="PASS" start="2026-10-29T17:10:39.995618" elapsed="0.016352"/>
+</kw>
+<kw name="Wait Until Page Contains Element" owner="SeleniumLibrary">
+<arg>css:.column-cell</arg>
+<arg>timeout=10s</arg>
+<doc>Waits until the element ``locator`` appears on the current page.</doc>
+<status status="PASS" start="2026-10-29T17:10:40.012575" elapsed="0.017912"/>
+</kw>
+<arg>${REPORT_FILE}</arg>
+<status status="PASS" start="2026-10-29T17:10:37.177842" elapsed="2.853065"/>
+</kw>
+<kw name="Locate HTML Table">
+<kw name="Get WebElement" owner="SeleniumLibrary">
+<msg time="2026-10-29T17:10:40.043735" level="INFO">${table} = &lt;selenium.webdriver.remote.webelement.WebElement (session="ac587183d8e55df9c3203150df31e76f", element="f.D4050B3E56D01AB97163B999DDD65DA5.d.9412CB67E9BC2DF02AC57BA92894B465.e.3")&gt;</msg>
+<var>${table}</var>
+<arg>xpath=//*[@class='table']</arg>
+<doc>Returns the first WebElement matching the given ``locator``.</doc>
+<status status="PASS" start="2026-10-29T17:10:40.032116" elapsed="0.011830"/>
+</kw>
+<return>
+<value>${table}</value>
+<status status="PASS" start="2026-10-29T17:10:40.044384" elapsed="0.000276"/>
+</return>
+<msg time="2026-10-29T17:10:40.045388" level="INFO">${table} = &lt;selenium.webdriver.remote.webelement.WebElement (session="ac587183d8e55df9c3203150df31e76f", element="f.D4050B3E56D01AB97163B999DDD65DA5.d.9412CB67E9BC2DF02AC57BA92894B465.e.3")&gt;</msg>
+<var>${table}</var>
+<status status="PASS" start="2026-10-29T17:10:40.031754" elapsed="0.013795"/>
+</kw>
+<kw name="Read HTML Table Data" owner="helper">
+<msg time="2026-10-29T17:10:40.046509" level="INFO">Starting HTML table data extraction...</msg>
+<msg time="2026-10-29T17:10:40.058291" level="INFO">Detected Plotly table with 3 columns (attempt 1).</msg>
+<msg time="2026-10-29T17:10:44.207713" level="INFO">Successfully extracted 19 rows from HTML table.</msg>
+<msg time="2026-10-29T17:10:44.207846" level="INFO">Table columns: ['Facility Type', 'Visit Date', 'Average Time Spent']</msg>
+<msg time="2026-10-29T17:10:44.230473" level="INFO">${html_df} =        Facility Type  Visit Date  Average Time Spent
+0   Specialty Center  2026-10-02               36.67
+1           Hospital  2026-10-02               27.75
+2             Clinic  2026-10-02         ...</msg>
+<var>${html_df}</var>
+<arg>${table}</arg>
+<doc>Extracts table data from a located Selenium WebElement into a Pandas DataFrame.
+Supports both Plotly SVG tables (.y-column structure) and standard HTML tables.</doc>
+<status status="PASS" start="2026-10-29T17:10:40.046267" elapsed="4.184486"/>
+</kw>
+<kw name="Read Parquet Dataset" owner="helper">
+<msg time="2026-10-29T17:10:44.231917" level="INFO">Reading Parquet dataset from: C:\Users\MananMkrtchyan\Downloads\dqe-automation-main\dqe-automation\Robot Framework/parquet_data/facility_type_avg_time_spent_per_visit_date</msg>
+<msg time="2026-10-29T17:10:46.242283" level="INFO">Applying date filter: visit_date &gt;= 2026-09-26</msg>
+<msg time="2026-10-29T17:10:46.254932" level="INFO">Successfully loaded 19 rows from Parquet dataset.</msg>
+<msg time="2026-10-29T17:10:46.255147" level="INFO">Parquet columns: ['Facility Type', 'Visit Date', 'Average Time Spent']</msg>
+<msg time="2026-10-29T17:10:46.270451" level="INFO">${parquet_df} =        Facility Type  Visit Date  Average Time Spent
+0   Specialty Center  2026-10-02               36.67
+1           Hospital  2026-10-02               27.75
+2             Clinic  2026-10-02         ...</msg>
+<var>${parquet_df}</var>
+<arg>${PARQUET_FOLDER}</arg>
+<arg>${FILTER_DATE}</arg>
+<doc>Reads a partitioned Parquet dataset from the specified folder,
+optionally filters by visit date, and standardizes columns for comparison.</doc>
+<status status="PASS" start="2026-10-29T17:10:44.231548" elapsed="2.039049"/>
+</kw>
+<kw name="Compare DataFrames" owner="helper">
+<msg time="2026-10-29T17:10:46.276066" level="INFO">Comparing HTML Table DataFrame with Parquet DataFrame...</msg>
+<msg time="2026-10-29T17:10:46.289089" level="INFO">SUCCESS: HTML table data and Parquet dataset match exactly! (19 rows, 3 columns)</msg>
+<msg time="2026-10-29T17:10:46.289382" level="INFO">SUCCESS: HTML table data and Parquet dataset match exactly! (19 rows, 3 columns)</msg>
+<arg>${html_df}</arg>
+<arg>${parquet_df}</arg>
+<doc>Compares two DataFrames for an exact match.
+Passes if they match exactly.
+Fails the test and displays detailed differences if mismatches are found.</doc>
+<status status="PASS" start="2026-10-29T17:10:46.275131" elapsed="0.014364"/>
+</kw>
+<kw name="Close Browser" owner="SeleniumLibrary" type="TEARDOWN">
+<doc>Closes the current browser.</doc>
+<status status="PASS" start="2026-10-29T17:10:46.291916" elapsed="2.511964"/>
+</kw>
+<doc>Step-by-step verification of HTML report table data against partitioned Parquet dataset.</doc>
+<status status="PASS" start="2026-10-29T17:10:37.176634" elapsed="11.627588"/>
+</test>
+<doc>Data Quality validation test comparing HTML report table with partitioned Parquet dataset.</doc>
+<status status="PASS" start="2026-10-29T17:10:36.417735" elapsed="12.387998"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Test" id="s1" pass="1" fail="0" skip="0">Test</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>
